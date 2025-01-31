@@ -1,4 +1,5 @@
 # CloudLab-hw1
+ДЗ по "Ввведению в облачные технологии", Голубева Ксения, 11-102
 
-Uploading ‎Шпаргалка ИТИС 2024 vvot11 – (955) 2025-01-31 11-35-07.mp4…
+https://github.com/user-attachments/assets/f2f86476-6f7c-4e8e-a95b-e0a2be55363d
 
