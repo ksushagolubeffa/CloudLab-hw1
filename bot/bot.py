@@ -41,16 +41,23 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
            await context.bot.send_message(chat_id=update.effective_chat.id, text="Я могу обработать только одну фотографию.")
            return
 
-        photo: PhotoSize = update.message.photo[-1]
-        file_id = photo.file_id
-        file = await context.bot.get_file(file_id)
-        file_path = file.file_path
-
         try:
             photo = update.message.photo[-1]
-            # image_bytes = BytesIO()
-            file = await photo.get_file()
-            image_bytes = file.download_as_bytearray()
+            file = await context.bot.get_file(photo.file_id)
+            image_bytes = await file.download_as_bytearray()
+            base64_image = base64.b64encode(image_bytes).decode("utf-8")
+            recognized_text = await recognize_text_from_image(base64_image)
+            
+            # file_id = photo.file_id
+            # file = await context.bot.get_file(file_id)
+            # # file_path = file.file_path
+            # # image_bytes = BytesIO()
+            # bot = context.bot
+            # image_bytes = await bot.download_file(file_path)
+            # base64_image = base64.b64encode(image_bytes).decode("utf-8")
+            # recognized_text = await recognize_text_from_image(base64_image)
+            # file = await photo.get_file()
+            # image_bytes = file.download_as_bytearray()
 
             # Создаем BytesIO из загруженных байтов
             # image_bytes = BytesIO(image_bytes_array)
@@ -58,8 +65,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # await file.download_as_bytearray(image_bytes)
             # await photo.download(destination=image_bytes)
             # image_bytes.seek(0)
-            photo = base64.b64encode(image_bytes.read()).decode('utf-8')
-            recognized_text = await recognize_text_from_image(photo)
+            # photo = base64.b64encode(image_bytes.read()).decode('utf-8')
+            # recognized_text = await recognize_text_from_image(photo)
             
             if recognized_text:
               try:

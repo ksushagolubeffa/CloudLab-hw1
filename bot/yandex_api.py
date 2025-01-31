@@ -51,7 +51,6 @@ async def get_answer_from_yandex(question):
         # Replace with your actual API endpoint. For example, using Yandex GPT model
         url = f"https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
         headers = {
-            # "Authorization": f"Api-Key {yandex_api_key}",
             'Authorization': f'Api-Key {yandex_api_key}',
             'x-folder-id': f'{yandex_folder_id}',
             "Content-Type": "application/json"

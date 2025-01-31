@@ -3,6 +3,7 @@ import requests
 import json
 import logging
 import configparser
+import base64
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -22,57 +23,53 @@ def read_tfvars(filename="terraform.tfvars"):
         exit()
         
 async def recognize_text_from_image(image_content):
-        config = read_tfvars()  
-        yandex_api_key = config.get('yandex_api_key').strip('"')
-        yandex_folder_id = config.get('yandex_folder_id').strip('"')
-        # yandex_api_key = os.environ.get("YANDEX_API_KEY")
-        if not yandex_api_key:
-           raise ValueError("YANDEX_API_KEY environment variable not set")
-        try:
-          url = "https://ocr.api.cloud.yandex.net/ocr/v1/recognizeText"
-          headers = {
-              "Authorization": f"Api-Key {yandex_api_key}",
-              'x-folder-id': f'{yandex_folder_id}',
-              "Content-Type": "application/json"
-          }
+    config = read_tfvars()
+    yandex_api_key = config.get('yandex_api_key').strip('"')
+    yandex_folder_id = config.get('yandex_folder_id').strip('"')
 
-        #   image_content = image_bytes.decode('latin-1') # Encode bytes to content
-          payload = {
-            'mimeType': 'JPEG',
+    if not yandex_api_key:
+        raise ValueError("YANDEX_API_KEY environment variable not set")
+
+    try:
+        
+        url = "https://ocr.api.cloud.yandex.net/ocr/v1/recognizeText"
+        headers = {
+            "Authorization": f"Api-Key {yandex_api_key}",
+            'x-folder-id': f'{yandex_folder_id}',
+            "Content-Type": "application/json",
+        }
+
+        data = {
+            'mimeType': 'jpeg',
             'languageCodes': ['ru'],
             'model': 'page',
-            'content': image_content,
-          }
-        #   payload = {
-        #       "analyze_specs": [{
-        #           "content": image_content,
-        #           "features": [{
-        #               "type": "TEXT_DETECTION",
-        #           }]
-        #       }]
-        #   }
-          response = requests.post(url, headers=headers, json=payload)
-          response.raise_for_status()
-          response_json = response.json()
+            'content': image_content
+        }
+        
+        response = requests.post(url, headers=headers, data=json.dumps(data))
 
-          if response_json and response_json["results"] and response_json["results"][0]["results"] and response_json["results"][0]["results"][0]["textDetection"] and response_json["results"][0]["results"][0]["textDetection"]["pages"]:
-              full_text = ""
-              for page in response_json["results"][0]["results"][0]["textDetection"]["pages"]:
-                  for block in page["blocks"]:
-                      for line in block["lines"]:
-                          full_text += " ".join([word["text"] for word in line["words"]]) + " "
-                  full_text+="\n" #Add new line
-              return full_text.strip()
-          else:
-                logging.warning(f"Unexpected Yandex Vision OCR response format: {response_json}")
+        if response.status_code == 200:
+            result = response.json().get('result', {})
+            text_annotation = result.get('textAnnotation', {})
+            if text_annotation:
+                ocr_text = text_annotation.get('fullText', '')
+                if ocr_text:
+                    return 'Ответь на билет:\n\n' + ocr_text
+                else:
+                    return None
+            else:
+                logging.error(f"No text: {text_annotation}")
                 return None
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Error during Yandex Vision API request: {e}")
-            return None
-        except json.JSONDecodeError as e:
-          logging.error(f"Error decoding Yandex Vision API JSON response: {e}")
-          return None
-        except Exception as e:
-            logging.error(f"An unexpected error occurred in image processing: {e}")
+        else:
+            logging.error(f"Status code: {response.status_code}")
             return None
 
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error during Yandex OCR API request: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        logging.error(f"Error decoding Yandex OCR API JSON response: {e}")
+        return None
+    except Exception as e:
+        logging.error(f"An unexpected error occurred in image processing: {e}")
+        return None
